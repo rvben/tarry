@@ -117,6 +117,20 @@ impl GhClient for GhCli {
     }
 }
 
+/// Current git branch of the working directory, if inside a repo and not
+/// detached. Used so a bare `tarry run` waits on the current branch's runs.
+pub fn current_git_branch() -> Option<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (!branch.is_empty() && branch != "HEAD").then_some(branch)
+}
+
 pub fn parse_run_view(v: &serde_json::Value) -> RunView {
     let mut failed_steps = Vec::new();
     if let Some(jobs) = v["jobs"].as_array() {
@@ -178,6 +192,14 @@ mod tests {
             view.failed_steps,
             vec![("build".to_string(), "Run tests".to_string())]
         );
+    }
+
+    #[test]
+    fn current_git_branch_returns_branch_inside_a_repo() {
+        // Tests run with the crate root (a git repo) as working directory.
+        let branch = current_git_branch();
+        assert!(branch.is_some());
+        assert!(!branch.unwrap().is_empty());
     }
 
     #[test]

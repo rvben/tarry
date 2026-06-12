@@ -16,27 +16,35 @@ impl Probe for TcpProbe {
     }
 
     fn poll(&mut self) -> ProbeResult {
-        let resolved = match self.addr.to_socket_addrs() {
-            Ok(mut addrs) => addrs.next(),
+        let resolved: Vec<_> = match self.addr.to_socket_addrs() {
+            Ok(addrs) => addrs.collect(),
             Err(e) => {
                 return ProbeResult::Pending {
                     note: Some(format!("resolve {}: {e}", self.addr)),
                 };
             }
         };
-        let Some(sock_addr) = resolved else {
+        if resolved.is_empty() {
             return ProbeResult::Pending {
                 note: Some(format!("{} resolved to no addresses", self.addr)),
             };
-        };
-        match TcpStream::connect_timeout(&sock_addr, self.connect_timeout) {
-            Ok(_) => ProbeResult::Met(Report {
-                summary: format!("{} accepts connections", self.addr),
-                detail: json!({"addr": self.addr}),
-            }),
-            Err(e) => ProbeResult::Pending {
-                note: Some(format!("connect {}: {e}", self.addr)),
-            },
+        }
+        // A host may resolve to several addresses (e.g. ::1 and 127.0.0.1);
+        // any one accepting connections satisfies the condition.
+        let mut last_error = String::new();
+        for sock_addr in &resolved {
+            match TcpStream::connect_timeout(sock_addr, self.connect_timeout) {
+                Ok(_) => {
+                    return ProbeResult::Met(Report {
+                        summary: format!("{} accepts connections", self.addr),
+                        detail: json!({"addr": self.addr, "connected": sock_addr.to_string()}),
+                    });
+                }
+                Err(e) => last_error = format!("connect {sock_addr}: {e}"),
+            }
+        }
+        ProbeResult::Pending {
+            note: Some(last_error),
         }
     }
 }
@@ -68,6 +76,20 @@ mod tests {
             connect_timeout: Duration::from_secs(1),
         };
         assert!(matches!(probe.poll(), ProbeResult::Pending { .. }));
+    }
+
+    #[test]
+    fn later_resolved_address_is_tried() {
+        // Bind IPv4 only, then probe via "localhost", which on dual-stack
+        // systems resolves ::1 first. The probe must try every address.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let addr = format!("localhost:{port}");
+        let mut probe = TcpProbe {
+            addr,
+            connect_timeout: Duration::from_secs(1),
+        };
+        assert!(matches!(probe.poll(), ProbeResult::Met(_)));
     }
 
     #[test]
