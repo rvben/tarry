@@ -1,0 +1,25 @@
+[package]
+name = "tarry"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+description = "Block until a condition holds, then print one compact verdict"
+license = "MIT"
+repository = "https://github.com/rvben/tarry"
+keywords = ["cli", "wait", "poll", "ci", "agent"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+humantime = "2"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "2", features = ["json"] }
+
+[dev-dependencies]
+assert_cmd = "2"
+httpmock = "0.7"
+predicates = "3"
+tempfile = "3"
