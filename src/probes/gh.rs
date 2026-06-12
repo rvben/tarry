@@ -120,8 +120,13 @@ impl GhClient for GhCli {
 /// Current git branch of the working directory, if inside a repo and not
 /// detached. Used so a bare `tarry run` waits on the current branch's runs.
 pub fn current_git_branch() -> Option<String> {
+    current_git_branch_in(std::path::Path::new("."))
+}
+
+fn current_git_branch_in(dir: &std::path::Path) -> Option<String> {
     let output = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .current_dir(dir)
         .output()
         .ok()?;
     if !output.status.success() {
@@ -194,12 +199,43 @@ mod tests {
         );
     }
 
+    fn git(dir: &std::path::Path, args: &[&str]) {
+        let status = Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .expect("git runs");
+        assert!(status.success(), "git {args:?} failed");
+    }
+
     #[test]
-    fn current_git_branch_returns_branch_inside_a_repo() {
-        // Tests run with the crate root (a git repo) as working directory.
-        let branch = current_git_branch();
-        assert!(branch.is_some());
-        assert!(!branch.unwrap().is_empty());
+    fn current_git_branch_returns_branch_on_a_branch() {
+        let dir = tempfile::tempdir().unwrap();
+        git(dir.path(), &["init", "-b", "feature-x"]);
+        git(dir.path(), &["config", "user.email", "t@example.com"]);
+        git(dir.path(), &["config", "user.name", "t"]);
+        git(dir.path(), &["config", "commit.gpgsign", "false"]);
+        git(dir.path(), &["commit", "--allow-empty", "-m", "init"]);
+        assert_eq!(
+            current_git_branch_in(dir.path()).as_deref(),
+            Some("feature-x")
+        );
+    }
+
+    #[test]
+    fn current_git_branch_is_none_when_detached() {
+        // Release workflows check out tags, which detaches HEAD; branch
+        // inference must yield None there rather than the literal "HEAD".
+        let dir = tempfile::tempdir().unwrap();
+        git(dir.path(), &["init", "-b", "main"]);
+        git(dir.path(), &["config", "user.email", "t@example.com"]);
+        git(dir.path(), &["config", "user.name", "t"]);
+        git(dir.path(), &["config", "commit.gpgsign", "false"]);
+        git(dir.path(), &["commit", "--allow-empty", "-m", "init"]);
+        git(dir.path(), &["checkout", "--detach"]);
+        assert_eq!(current_git_branch_in(dir.path()), None);
     }
 
     #[test]
