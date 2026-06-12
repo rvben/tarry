@@ -91,3 +91,56 @@ fn tcp_open_port_succeeds() {
     let addr = listener.local_addr().unwrap().to_string();
     tarry().args(["tcp", &addr]).assert().success();
 }
+
+#[test]
+fn schema_is_valid_clispec_v02_json() {
+    let output = tarry().arg("schema").assert().success();
+    let stdout = String::from_utf8(output.get_output().stdout.clone()).unwrap();
+    let doc: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(doc["clispec"], "0.2");
+    assert_eq!(doc["name"], "tarry");
+    let commands: Vec<&str> = doc["commands"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["name"].as_str().unwrap())
+        .collect();
+    for expected in ["run", "http", "tcp", "file", "cmd", "schema"] {
+        assert!(commands.contains(&expected), "missing command {expected}");
+    }
+    // cmd executes arbitrary user commands; everything else is read-only.
+    for c in doc["commands"].as_array().unwrap() {
+        let expected_mutating = c["name"] == "cmd";
+        assert_eq!(c["mutating"], expected_mutating, "command {}", c["name"]);
+    }
+    // Outcomes: timeout (1, retryable) and condition_failed (2, not retryable).
+    let outcomes = doc["outcomes"].as_array().unwrap();
+    assert!(
+        outcomes
+            .iter()
+            .any(|o| o["kind"] == "timeout" && o["exit_code"] == 1 && o["retryable"] == true)
+    );
+    assert!(outcomes.iter().any(|o| o["kind"] == "condition_failed"
+        && o["exit_code"] == 2
+        && o["retryable"] == false));
+    let errors = doc["errors"].as_array().unwrap();
+    assert!(
+        errors
+            .iter()
+            .any(|e| e["kind"] == "usage" && e["exit_code"] == 3)
+    );
+    assert!(
+        errors
+            .iter()
+            .any(|e| e["kind"] == "environment" && e["exit_code"] == 4)
+    );
+}
+
+#[test]
+fn help_mentions_schema() {
+    tarry()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("tarry schema"));
+}
