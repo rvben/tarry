@@ -38,7 +38,10 @@ fn lookup<'v>(value: &'v Value, path: &[String]) -> Option<&'v Value> {
 fn value_matches(value: &Value, expected: &str) -> bool {
     match value {
         Value::String(s) => s == expected,
-        other => other.to_string() == expected,
+        Value::Number(n) => n.to_string() == expected,
+        Value::Bool(b) => b.to_string() == expected,
+        Value::Null => expected == "null",
+        Value::Array(_) | Value::Object(_) => false,
     }
 }
 
