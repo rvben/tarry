@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+
+## [0.1.1](https://github.com/rvben/tarry/compare/v0.1.0...v0.1.1) - 2026-06-23
+
+### Fixed
+
+- **run**: skip stale prior run when resolving the latest workflow run ([492cf00](https://github.com/rvben/tarry/commit/492cf000c603b45fc3f0dd1d9c919b32b1f809eb))
+
 ## [0.1.0] - 2026-06-12
 
 ### Added
