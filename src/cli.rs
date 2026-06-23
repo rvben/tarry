@@ -43,7 +43,9 @@ pub enum Command {
         /// Repository as owner/name. Defaults to the repo of the current directory.
         #[arg(short = 'R', long)]
         repo: Option<String>,
-        /// Filter the latest-run lookup by workflow name or file.
+        /// Resolve the latest run of this workflow (name or file). Takes
+        /// priority over current-branch inference, so it finds tag-triggered
+        /// runs (e.g. releases); pass --branch to also scope by branch.
         #[arg(long)]
         workflow: Option<String>,
         /// Filter the latest-run lookup by branch.

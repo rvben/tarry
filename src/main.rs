@@ -105,14 +105,16 @@ fn build_probe(command: Command) -> Result<Box<dyn Probe>, BuildError> {
             branch,
         } => {
             probes::gh::GhCli::check().map_err(|e| BuildError::Environment(e.to_string()))?;
-            // A bare `tarry run` waits on the current branch, as documented.
-            // With an explicit run id or another repo, branch inference from
-            // the working directory would be wrong.
-            let branch = branch.or_else(|| {
-                (run_id.is_none() && repo.is_none())
-                    .then(probes::gh::current_git_branch)
-                    .flatten()
-            });
+            // A bare `tarry run` waits on the current branch, as documented. An
+            // explicit run id, another repo, or a named workflow each suppress
+            // that inference (see resolve_branch).
+            let branch = probes::gh::resolve_branch(
+                branch,
+                run_id,
+                repo.as_deref(),
+                workflow.as_deref(),
+                probes::gh::current_git_branch,
+            );
             Ok(Box::new(probes::run::RunProbe {
                 gh: Box::new(probes::gh::GhCli),
                 repo,

@@ -28,7 +28,7 @@ pub fn document() -> String {
                 "args": [
                     {"name": "run_id", "type": "integer", "required": false, "description": "Run id; defaults to the latest run for the current repo and branch"},
                     {"name": "--repo", "type": "string", "required": false, "description": "Repository as owner/name (-R); defaults to the repo of the current directory"},
-                    {"name": "--workflow", "type": "string", "required": false, "description": "Filter the latest-run lookup by workflow name or file"},
+                    {"name": "--workflow", "type": "string", "required": false, "description": "Resolve the latest run of this workflow (name or file); takes priority over current-branch inference so it finds tag-triggered runs such as releases"},
                     {"name": "--branch", "type": "string", "required": false, "description": "Filter the latest-run lookup by branch"}
                 ],
                 "output_fields": verdict_fields,

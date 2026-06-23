@@ -160,6 +160,30 @@ fn current_git_branch_in(dir: &std::path::Path) -> Option<String> {
     (!branch.is_empty() && branch != "HEAD").then_some(branch)
 }
 
+/// Decide which branch to scope the latest-run lookup to.
+///
+/// An explicit `--branch` always wins. Otherwise the current branch is inferred
+/// only for a bare `tarry run` with no other selector. An explicit run id, a
+/// different repo, or a named `--workflow` each suppress inference: a named
+/// workflow is itself the selector the user asked for, and `gh`'s `--branch`
+/// filter does not reliably list tag-triggered runs (e.g. release workflows)
+/// under the current branch, so guessing one would hide the run.
+pub fn resolve_branch(
+    explicit: Option<String>,
+    run_id: Option<u64>,
+    repo: Option<&str>,
+    workflow: Option<&str>,
+    infer: impl FnOnce() -> Option<String>,
+) -> Option<String> {
+    if explicit.is_some() {
+        return explicit;
+    }
+    if run_id.is_some() || repo.is_some() || workflow.is_some() {
+        return None;
+    }
+    infer()
+}
+
 /// Parse an RFC3339 UTC timestamp (`YYYY-MM-DDTHH:MM:SS...`) into seconds since
 /// the Unix epoch. Any fractional seconds and timezone suffix are ignored;
 /// `gh` reports run timestamps in UTC. Returns `None` on a malformed prefix.
@@ -297,6 +321,31 @@ mod tests {
         git(dir.path(), &["commit", "--allow-empty", "-m", "init"]);
         git(dir.path(), &["checkout", "--detach"]);
         assert_eq!(current_git_branch_in(dir.path()), None);
+    }
+
+    #[test]
+    fn resolve_branch_rules() {
+        let some_main = || Some("main".to_string());
+        let never = || panic!("inference must not be called");
+
+        // Bare `tarry run` infers the current branch.
+        assert_eq!(
+            resolve_branch(None, None, None, None, some_main),
+            Some("main".into())
+        );
+        // Explicit branch always wins and skips inference.
+        assert_eq!(
+            resolve_branch(Some("dev".into()), None, None, Some("CI"), never),
+            Some("dev".into())
+        );
+        // A named workflow is the selector: do not also guess the branch.
+        assert_eq!(
+            resolve_branch(None, None, None, Some("Release"), never),
+            None
+        );
+        // An explicit run id or another repo also suppress inference.
+        assert_eq!(resolve_branch(None, Some(1), None, None, never), None);
+        assert_eq!(resolve_branch(None, None, Some("o/r"), None, never), None);
     }
 
     #[test]
