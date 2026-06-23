@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 
 
+
+## [0.1.3](https://github.com/rvben/tarry/compare/v0.1.2...v0.1.3) - 2026-06-23
+
+### Fixed
+
+- **cli**: remove the redundant top-level run alias in favor of gh run ([5a6ae44](https://github.com/rvben/tarry/commit/5a6ae4446aa77c33e0116f836c39bdb3948b0b0a))
+
 ## [0.1.2](https://github.com/rvben/tarry/compare/v0.1.1...v0.1.2) - 2026-06-23
 
 ### Fixed
