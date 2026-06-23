@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 
+
+## [0.1.2](https://github.com/rvben/tarry/compare/v0.1.1...v0.1.2) - 2026-06-23
+
+### Fixed
+
+- **run**: don't infer current branch when --workflow is given ([d6b4856](https://github.com/rvben/tarry/commit/d6b48566d3ef8084607b2faa31e81d095c6785d1))
+
 ## [0.1.1](https://github.com/rvben/tarry/compare/v0.1.0...v0.1.1) - 2026-06-23
 
 ### Fixed
