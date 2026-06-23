@@ -119,6 +119,7 @@ fn build_probe(command: Command) -> Result<Box<dyn Probe>, BuildError> {
                 branch,
                 workflow,
                 run_id,
+                started_at: std::time::SystemTime::now(),
             }))
         }
         Command::Http {
