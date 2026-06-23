@@ -72,13 +72,12 @@ fn real_main() -> i32 {
     verdict.exit_code()
 }
 
-/// The shared run args for either `gh run` or its `run` alias, if that's the command.
+/// The run args, if the command is `gh run`.
 fn run_args(command: &Command) -> Option<&RunArgs> {
     match command {
         Command::Gh {
             command: GhCommand::Run(args),
-        }
-        | Command::Run(args) => Some(args),
+        } => Some(args),
         _ => None,
     }
 }
@@ -139,8 +138,7 @@ fn build_probe(command: Command) -> Result<Box<dyn Probe>, BuildError> {
     match command {
         Command::Gh {
             command: GhCommand::Run(args),
-        }
-        | Command::Run(args) => build_run_probe(args),
+        } => build_run_probe(args),
         Command::Http {
             url,
             status,

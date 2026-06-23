@@ -146,15 +146,13 @@ fn help_mentions_schema() {
 }
 
 #[test]
-fn gh_is_listed_and_run_alias_is_hidden() {
-    // Top-level help advertises `gh`, not the hidden back-compat `run` alias.
+fn gh_is_listed_and_run_is_namespaced() {
+    // Top-level help advertises `gh`; `gh --help` lists the nested `run`.
     tarry()
         .arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("gh"))
-        .stdout(predicate::str::contains("Back-compat alias").not());
-    // `gh --help` lists the nested `run`.
+        .stdout(predicate::str::contains("gh"));
     tarry()
         .args(["gh", "--help"])
         .assert()
@@ -163,17 +161,20 @@ fn gh_is_listed_and_run_alias_is_hidden() {
 }
 
 #[test]
-fn gh_run_and_run_alias_both_parse() {
-    // Both the canonical `gh run` and the hidden `run` alias accept the same
-    // flags. `--help` short-circuits before any gh call, so this needs no gh.
+fn gh_run_parses_and_top_level_run_is_removed() {
+    // `gh run` is the only spelling. `--help` short-circuits before any gh call.
     tarry()
         .args(["gh", "run", "--help"])
         .assert()
         .success()
         .stdout(predicate::str::contains("--workflow"));
+    // The old top-level `run` alias is gone: clap rejects it as unknown.
     tarry()
-        .args(["run", "--help"])
+        .args(["run", "--workflow", "Release"])
         .assert()
-        .success()
-        .stdout(predicate::str::contains("--workflow"));
+        .failure()
+        .stderr(
+            predicate::str::contains("unrecognized subcommand")
+                .or(predicate::str::contains("unexpected argument")),
+        );
 }

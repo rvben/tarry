@@ -34,7 +34,7 @@ pub struct Cli {
     pub command: Command,
 }
 
-/// Arguments shared by `gh run` and its back-compat `run` alias.
+/// Arguments for `gh run`.
 #[derive(Args)]
 pub struct RunArgs {
     /// Run id. Defaults to the latest run for the current repo and branch.
@@ -66,9 +66,6 @@ pub enum Command {
         #[command(subcommand)]
         command: GhCommand,
     },
-    /// Back-compat alias for `gh run`.
-    #[command(hide = true)]
-    Run(RunArgs),
     /// Wait for an HTTP endpoint to match.
     Http {
         url: String,

@@ -21,7 +21,7 @@ tarry gh run --workflow Release    # latest Release run (any branch; finds tag-t
 tarry gh run -R rvben/upd --workflow Release
 ```
 
-`gh run` mirrors GitHub's own `gh run` CLI. `--workflow` resolves the latest run of that workflow regardless of branch, so it works for release workflows triggered by tags; pass `--branch` to also scope by branch. The older `tarry run ...` spelling still works as a hidden alias.
+`gh run` mirrors GitHub's own `gh run` CLI. `--workflow` resolves the latest run of that workflow regardless of branch, so it works for release workflows triggered by tags; pass `--branch` to also scope by branch.
 
 A red run stops polling immediately (exit 2) and the verdict carries a bounded digest: failed job, failed step, and the last 20 lines of the failed step's log.
 
