@@ -11,7 +11,7 @@ use std::time::Duration;
 use clap::Parser;
 use clap::error::ErrorKind;
 
-use cli::{Cli, Command, OutputFormat};
+use cli::{Cli, Command, GhCommand, OutputFormat, RunArgs};
 use engine::{EngineConfig, IntervalPolicy, SystemClock};
 use probe::Probe;
 use verdict::Verdict;
@@ -72,8 +72,19 @@ fn real_main() -> i32 {
     verdict.exit_code()
 }
 
+/// The shared run args for either `gh run` or its `run` alias, if that's the command.
+fn run_args(command: &Command) -> Option<&RunArgs> {
+    match command {
+        Command::Gh {
+            command: GhCommand::Run(args),
+        }
+        | Command::Run(args) => Some(args),
+        _ => None,
+    }
+}
+
 fn engine_config(cli: &Cli) -> EngineConfig {
-    let is_run = matches!(cli.command, Command::Run { .. });
+    let is_run = run_args(&cli.command).is_some();
     let timeout = cli.timeout.unwrap_or(if is_run {
         Duration::from_secs(30 * 60)
     } else {
@@ -96,34 +107,40 @@ enum BuildError {
     Environment(String),
 }
 
+fn build_run_probe(args: RunArgs) -> Result<Box<dyn Probe>, BuildError> {
+    let RunArgs {
+        run_id,
+        repo,
+        workflow,
+        branch,
+    } = args;
+    probes::gh::GhCli::check().map_err(|e| BuildError::Environment(e.to_string()))?;
+    // A bare `tarry gh run` waits on the current branch, as documented. An
+    // explicit run id, another repo, or a named workflow each suppress that
+    // inference (see resolve_branch).
+    let branch = probes::gh::resolve_branch(
+        branch,
+        run_id,
+        repo.as_deref(),
+        workflow.as_deref(),
+        probes::gh::current_git_branch,
+    );
+    Ok(Box::new(probes::run::RunProbe {
+        gh: Box::new(probes::gh::GhCli),
+        repo,
+        branch,
+        workflow,
+        run_id,
+        started_at: std::time::SystemTime::now(),
+    }))
+}
+
 fn build_probe(command: Command) -> Result<Box<dyn Probe>, BuildError> {
     match command {
-        Command::Run {
-            run_id,
-            repo,
-            workflow,
-            branch,
-        } => {
-            probes::gh::GhCli::check().map_err(|e| BuildError::Environment(e.to_string()))?;
-            // A bare `tarry run` waits on the current branch, as documented. An
-            // explicit run id, another repo, or a named workflow each suppress
-            // that inference (see resolve_branch).
-            let branch = probes::gh::resolve_branch(
-                branch,
-                run_id,
-                repo.as_deref(),
-                workflow.as_deref(),
-                probes::gh::current_git_branch,
-            );
-            Ok(Box::new(probes::run::RunProbe {
-                gh: Box::new(probes::gh::GhCli),
-                repo,
-                branch,
-                workflow,
-                run_id,
-                started_at: std::time::SystemTime::now(),
-            }))
+        Command::Gh {
+            command: GhCommand::Run(args),
         }
+        | Command::Run(args) => build_run_probe(args),
         Command::Http {
             url,
             status,

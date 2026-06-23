@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum OutputFormat {
@@ -34,24 +34,41 @@ pub struct Cli {
     pub command: Command,
 }
 
+/// Arguments shared by `gh run` and its back-compat `run` alias.
+#[derive(Args)]
+pub struct RunArgs {
+    /// Run id. Defaults to the latest run for the current repo and branch.
+    pub run_id: Option<u64>,
+    /// Repository as owner/name. Defaults to the repo of the current directory.
+    #[arg(short = 'R', long)]
+    pub repo: Option<String>,
+    /// Resolve the latest run of this workflow (name or file). Takes priority
+    /// over current-branch inference, so it finds tag-triggered runs (e.g.
+    /// releases); pass --branch to also scope by branch.
+    #[arg(long)]
+    pub workflow: Option<String>,
+    /// Filter the latest-run lookup by branch.
+    #[arg(long)]
+    pub branch: Option<String>,
+}
+
+/// GitHub waits, namespaced to mirror the `gh` CLI (`gh run`, ...).
+#[derive(Subcommand)]
+pub enum GhCommand {
+    /// Wait for a GitHub Actions run to complete.
+    Run(RunArgs),
+}
+
 #[derive(Subcommand)]
 pub enum Command {
-    /// Wait for a GitHub Actions run to complete.
-    Run {
-        /// Run id. Defaults to the latest run for the current repo and branch.
-        run_id: Option<u64>,
-        /// Repository as owner/name. Defaults to the repo of the current directory.
-        #[arg(short = 'R', long)]
-        repo: Option<String>,
-        /// Resolve the latest run of this workflow (name or file). Takes
-        /// priority over current-branch inference, so it finds tag-triggered
-        /// runs (e.g. releases); pass --branch to also scope by branch.
-        #[arg(long)]
-        workflow: Option<String>,
-        /// Filter the latest-run lookup by branch.
-        #[arg(long)]
-        branch: Option<String>,
+    /// Wait on GitHub Actions, via the gh CLI. Mirrors `gh run`.
+    Gh {
+        #[command(subcommand)]
+        command: GhCommand,
     },
+    /// Back-compat alias for `gh run`.
+    #[command(hide = true)]
+    Run(RunArgs),
     /// Wait for an HTTP endpoint to match.
     Http {
         url: String,

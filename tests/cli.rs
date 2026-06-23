@@ -105,7 +105,7 @@ fn schema_is_valid_clispec_v02_json() {
         .iter()
         .map(|c| c["name"].as_str().unwrap())
         .collect();
-    for expected in ["run", "http", "tcp", "file", "cmd", "schema"] {
+    for expected in ["gh run", "http", "tcp", "file", "cmd", "schema"] {
         assert!(commands.contains(&expected), "missing command {expected}");
     }
     // cmd executes arbitrary user commands; everything else is read-only.
@@ -143,4 +143,37 @@ fn help_mentions_schema() {
         .assert()
         .success()
         .stdout(predicate::str::contains("tarry schema"));
+}
+
+#[test]
+fn gh_is_listed_and_run_alias_is_hidden() {
+    // Top-level help advertises `gh`, not the hidden back-compat `run` alias.
+    tarry()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("gh"))
+        .stdout(predicate::str::contains("Back-compat alias").not());
+    // `gh --help` lists the nested `run`.
+    tarry()
+        .args(["gh", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("run"));
+}
+
+#[test]
+fn gh_run_and_run_alias_both_parse() {
+    // Both the canonical `gh run` and the hidden `run` alias accept the same
+    // flags. `--help` short-circuits before any gh call, so this needs no gh.
+    tarry()
+        .args(["gh", "run", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--workflow"));
+    tarry()
+        .args(["run", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--workflow"));
 }

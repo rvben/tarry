@@ -22,8 +22,8 @@ pub fn document() -> String {
         ],
         "commands": [
             {
-                "name": "run",
-                "description": "Wait for a GitHub Actions run to complete. A red run is a terminal outcome: polling stops immediately and the verdict carries a bounded failure digest.",
+                "name": "gh run",
+                "description": "Wait for a GitHub Actions run to complete. A red run is a terminal outcome: polling stops immediately and the verdict carries a bounded failure digest. Also accepts the back-compat alias `run`.",
                 "mutating": false,
                 "args": [
                     {"name": "run_id", "type": "integer", "required": false, "description": "Run id; defaults to the latest run for the current repo and branch"},
