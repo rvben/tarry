@@ -82,7 +82,10 @@ fn invalid_json_path_is_usage_error_exit_3() {
 
 #[test]
 fn unknown_flag_is_usage_error_exit_3() {
-    tarry().args(["--no-such-flag"]).assert().code(3);
+    let output = tarry().args(["--no-such-flag"]).assert().code(3);
+    let stderr = String::from_utf8(output.get_output().stderr.clone()).unwrap();
+    let envelope: serde_json::Value = serde_json::from_str(stderr.lines().last().unwrap()).unwrap();
+    assert_eq!(envelope["error"]["kind"], "usage");
 }
 
 #[test]
@@ -93,11 +96,11 @@ fn tcp_open_port_succeeds() {
 }
 
 #[test]
-fn schema_is_valid_clispec_v02_json() {
+fn schema_is_valid_clispec_v03_json() {
     let output = tarry().arg("schema").assert().success();
     let stdout = String::from_utf8(output.get_output().stdout.clone()).unwrap();
     let doc: serde_json::Value = serde_json::from_str(&stdout).unwrap();
-    assert_eq!(doc["clispec"], "0.2");
+    assert_eq!(doc["clispec"], "0.3");
     assert_eq!(doc["name"], "tarry");
     let commands: Vec<&str> = doc["commands"]
         .as_array()
@@ -113,16 +116,18 @@ fn schema_is_valid_clispec_v02_json() {
         let expected_mutating = c["name"] == "cmd";
         assert_eq!(c["mutating"], expected_mutating, "command {}", c["name"]);
     }
-    // Outcomes: timeout (1, retryable) and condition_failed (2, not retryable).
+    // Outcomes: timeout (1) and condition_failed (2).
     let outcomes = doc["outcomes"].as_array().unwrap();
     assert!(
         outcomes
             .iter()
-            .any(|o| o["kind"] == "timeout" && o["exit_code"] == 1 && o["retryable"] == true)
+            .any(|o| o["name"] == "timeout" && o["code"] == 1)
     );
-    assert!(outcomes.iter().any(|o| o["kind"] == "condition_failed"
-        && o["exit_code"] == 2
-        && o["retryable"] == false));
+    assert!(
+        outcomes
+            .iter()
+            .any(|o| o["name"] == "condition_failed" && o["code"] == 2)
+    );
     let errors = doc["errors"].as_array().unwrap();
     assert!(
         errors

@@ -32,6 +32,9 @@ fn real_main() -> i32 {
                 _ => EXIT_USAGE,
             };
             let _ = e.print();
+            if code != 0 {
+                emit_error("usage", &e.to_string(), code);
+            }
             return code;
         }
     };
@@ -45,11 +48,11 @@ fn real_main() -> i32 {
     let mut probe: Box<dyn Probe> = match build_probe(cli.command) {
         Ok(p) => p,
         Err(BuildError::Usage(msg)) => {
-            eprintln!("error: {msg}");
+            emit_error("usage", &msg, EXIT_USAGE);
             return EXIT_USAGE;
         }
         Err(BuildError::Environment(msg)) => {
-            eprintln!("error: {msg}");
+            emit_error("environment", &msg, EXIT_ENVIRONMENT);
             return EXIT_ENVIRONMENT;
         }
     };
@@ -70,6 +73,20 @@ fn real_main() -> i32 {
         println!("{}", verdict.render_text());
     }
     verdict.exit_code()
+}
+
+fn emit_error(kind: &str, message: &str, exit_code: i32) {
+    eprintln!(
+        "{}",
+        serde_json::json!({
+            "error": {
+                "kind": kind,
+                "message": message.trim(),
+                "exit_code": exit_code,
+                "retryable": false
+            }
+        })
+    );
 }
 
 /// The run args, if the command is `gh run`.
