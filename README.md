@@ -71,3 +71,8 @@ Transient errors (connection refused, 5xx, gh hiccups) never fail a wait; they c
 ## Agent integration
 
 `tarry schema` prints the full machine-readable contract (commands, arguments, output fields, outcomes, errors) following clispec v0.2. It needs no network, auth, or config.
+
+## Releasing
+
+Vership owns versioning, changelog generation, release commits, and tags. See
+[the release runbook](docs/releases.md) for the verified workflow and recovery policy.

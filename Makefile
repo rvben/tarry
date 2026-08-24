@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt fmt-check check
+.PHONY: build test lint fmt fmt-check check release-patch release-minor release-major
 
 build:
 	cargo build
@@ -16,3 +16,12 @@ fmt-check:
 	cargo fmt --check
 
 check: fmt-check lint test
+
+release-patch:
+	vership bump patch
+
+release-minor:
+	vership bump minor
+
+release-major:
+	vership bump major
