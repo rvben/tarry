@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.5](https://github.com/rvben/tarry/compare/v0.1.4...v0.1.5) - 2026-09-27
 
+### Fixed
 
+- **deps**: update rustls to 0.23.45 for RUSTSEC-2026-0285 ([6453547](https://github.com/rvben/tarry/commit/6453547ad6efe40dcf5193be5190d4e4d92e294c))
+- **ci**: install pinned Rust components ([6eefb8c](https://github.com/rvben/tarry/commit/6eefb8cd0e49e23e552f998b5a72734e39008355))
 
 ## [0.1.3](https://github.com/rvben/tarry/compare/v0.1.2...v0.1.3) - 2026-06-23
 
