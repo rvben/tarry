@@ -6,6 +6,14 @@ Block until a condition holds, then print one compact verdict.
 
 ## Install
 
+### Homebrew
+
+```sh
+brew install rvben/tap/tarry
+```
+
+### Other installation methods
+
 ```sh
 cargo install tarry
 ```
