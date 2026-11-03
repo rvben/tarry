@@ -10,7 +10,7 @@ keywords = ["cli", "wait", "poll", "ci", "agent"]
 categories = ["command-line-utilities"]
 
 [dependencies]
-anyhow = "1"
+anyhow = "1.0.104"
 clap = { version = "4", features = ["derive"] }
 humantime = "2"
 regex = "1"
